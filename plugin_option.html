@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hybrid/PHEV vs. Non-Hybrid Cost Calculator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+        .container {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+            max-width: 600px; /* Limits width on larger screens */
+            margin: 30px auto; /* Centers the container */
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 25px;
+        }
+        .input-group {
+            margin-bottom: 18px;
+            position: relative;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #555;
+        }
+        input[type="number"], input[type="radio"] {
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            box-sizing: border-box; /* Include padding in width */
+            width: calc(100% - 20px); /* Adjusts for padding on inputs */
+            margin-right: 10px;
+        }
+        input[type="radio"] {
+            width: auto;
+            margin-right: 5px;
+            padding: 0;
+            border: none;
+        }
+        .radio-group {
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            padding: 10px;
+            background-color: #eaf7ed;
+            border-radius: 5px;
+            border: 1px solid #c9e0d1;
+        }
+        .radio-group label {
+            display: flex;
+            align-items: center;
+            font-weight: normal;
+            margin-bottom: 0;
+            cursor: pointer;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 15px 25px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 18px;
+            display: block;
+            width: 100%;
+            box-sizing: border-box;
+            margin-top: 20px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #result {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #e9f5e9;
+            border: 1px solid #d4eeda;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 1.1em;
+            color: #28a745;
+            font-weight: bold;
+        }
+        #result.error {
+            background-color: #ffe0e0;
+            border-color: #ffc4c4;
+            color: #dc3545;
+        }
+        .hidden {
+            display: none;
+        }
+
+        /* Styles for error tooltips */
+        .error-tooltip {
+            color: #dc3545;
+            font-size: 0.85em;
+            margin-top: 5px;
+            display: block;
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+            height: 0;
+            overflow: hidden;
+        }
+        .error-tooltip.show {
+            opacity: 1;
+            height: auto;
+        }
+        input.invalid {
+            border-color: #dc3545 !important;
+        }
+
+        /* Footer styles */
+        .footer {
+            margin-top: 40px;
+            text-align: center;
+            font-size: 0.85em;
+            color: #777;
+        }
+        .footer a {
+            color: #4CAF50;
+            text-decoration: none;
+        }
+        .footer a:hover {
+            text-decoration: underline;
+        }
+
+        /* --- Mobile Responsiveness (Media Queries) --- */
+        @media (max-width: 600px) {
+            body {
+                margin: 10px; /* Reduce margin on very small screens */
+            }
+            .container {
+                padding: 20px; /* Reduce padding inside container */
+                margin: 10px auto; /* Adjust outer margin */
+            }
+            h1 {
+                font-size: 1.5em; /* Slightly smaller heading */
+                margin-bottom: 20px;
+            }
+            .radio-group {
+                flex-direction: column; /* Stack radio buttons vertically */
+                align-items: flex-start; /* Align stacked items to the start */
+                padding: 15px;
+            }
+            .radio-group label {
+                margin-bottom: 10px; /* Space between stacked radio buttons */
+                font-size: 0.95em;
+            }
+            .radio-group label:last-child {
+                margin-bottom: 0; /* No margin after the last one */
+            }
+            input[type="number"], button {
+                font-size: 15px; /* Slightly smaller font in inputs/buttons */
+                padding: 10px;
+            }
+            label {
+                font-size: 0.9em; /* Smaller label font */
+            }
+            .error-tooltip {
+                font-size: 0.75em; /* Smaller tooltip font */
+            }
+        }
+
+        @media (max-width: 400px) {
+            .container {
+                padding: 15px;
+            }
+            input[type="number"] {
+                width: calc(100% - 10px); /* Adjust for padding on very small screens */
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Car Breakeven Point Calculator</h1>
+
+        <div class="radio-group">
+            <label>
+                <input type="radio" name="carType" value="normalHybrid" checked onchange="toggleCarInputs()">
+                Normal Hybrid Car
+            </label>
+            <label>
+                <input type="radio" name="carType" value="phev" onchange="toggleCarInputs()">
+                Plug-in Hybrid (PHEV) Car
+            </label>
+        </div>
+
+        <div class="input-group">
+            <label for="priceDifference">Price Difference (Selected Car - Non-Hybrid Car) in ₹:</label>
+            <input type="number" id="priceDifference" placeholder="e.g., 500000" min="0" value="500000" onkeydown="handleEnterKey(event)">
+            <span class="error-tooltip" id="priceDifferenceError"></span>
+        </div>
+
+        <div class="input-group">
+            <label for="petrolPrice">Petrol Price per Liter in ₹:</label>
+            <input type="number" id="petrolPrice" placeholder="e.g., 100" min="0" step="0.01" value="100" onkeydown="handleEnterKey(event)">
+            <span class="error-tooltip" id="petrolPriceError"></span>
+        </div>
+
+        <div class="input-group">
+            <label for="nonHybridMileage">Non-Hybrid Car Mileage (km/liter):</label>
+            <input type="number" id="nonHybridMileage" placeholder="e.g., 15" min="0" value="15" onkeydown="handleEnterKey(event)">
+            <span class="error-tooltip" id="nonHybridMileageError"></span>
+        </div>
+
+        <div id="normalHybridInputs">
+            <div class="input-group">
+                <label for="hybridMileage">Normal Hybrid Car Mileage (km/liter):</label>
+                <input type="number" id="hybridMileage" placeholder="e.g., 25" min="0" value="25" onkeydown="handleEnterKey(event)">
+                <span class="error-tooltip" id="hybridMileageError"></span>
+            </div>
+        </div>
+
+        <div id="phevInputs" class="hidden">
+            <div class="input-group">
+                <label for="electricityPrice">Electricity Price per kWh in ₹:</label>
+                <input type="number" id="electricityPrice" placeholder="e.g., 8" min="0" step="0.01" value="8" onkeydown="handleEnterKey(event)">
+                <span class="error-tooltip" id="electricityPriceError"></span>
+            </div>
+            <div class="input-group">
+                <label for="phevElectricityConsumption">PHEV Electricity Consumption (kWh / 100 km):</label>
+                <input type="number" id="phevElectricityConsumption" placeholder="e.g., 15" min="0" step="0.1" value="15" onkeydown="handleEnterKey(event)">
+                <span class="error-tooltip" id="phevElectricityConsumptionError"></span>
+            </div>
+            <div class="input-group">
+                <label for="phevElectricRange">PHEV Electric-Only Range (km, typical per charge):</label>
+                <input type="number" id="phevElectricRange" placeholder="e.g., 50" min="0" value="50" onkeydown="handleEnterKey(event)">
+                <span class="error-tooltip" id="phevElectricRangeError"></span>
+            </div>
+            <div class="input-group">
+                <label for="phevHybridMileage">PHEV Petrol Mileage (km/liter, after electric range is depleted):</label>
+                <input type="number" id="phevHybridMileage" placeholder="e.g., 20" min="0" value="20" onkeydown="handleEnterKey(event)">
+                <span class="error-tooltip" id="phevHybridMileageError"></span>
+            </div>
+        </div>
+
+        <button onclick="calculateBreakeven()">Calculate Breakeven Point</button>
+
+        <div id="result">
+            Enter values and select car type to see the result.
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>&copy; 2025 Car Breakeven Calculator. Author: Prashy. For any advancement requests, please reach out to <a href="mailto:thisisprashy@gmail.com">thisisprashy@gmail.com</a>.</p>
+    </div>
+
+    <script>
+        // Helper to show field-specific errors
+        function showError(inputId, message) {
+            const inputElement = document.getElementById(inputId);
+            const errorTooltip = document.getElementById(inputId + 'Error');
+            if (inputElement) {
+                inputElement.classList.add('invalid');
+            }
+            if (errorTooltip) {
+                errorTooltip.textContent = message;
+                errorTooltip.classList.add('show');
+            }
+        }
+
+        // Helper to clear field-specific errors
+        function clearError(inputId) {
+            const inputElement = document.getElementById(inputId);
+            const errorTooltip = document.getElementById(inputId + 'Error');
+            if (inputElement) {
+                inputElement.classList.remove('invalid');
+            }
+            if (errorTooltip) {
+                errorTooltip.textContent = '';
+                errorTooltip.classList.remove('show');
+            }
+        }
+
+        // Function to clear all field-specific errors
+        function clearAllFieldErrors() {
+            const inputs = document.querySelectorAll('.input-group input[type="number"]');
+            inputs.forEach(input => clearError(input.id));
+        }
+
+        function handleEnterKey(event) {
+            if (event.key === 'Enter') {
+                calculateBreakeven();
+            }
+        }
+
+        function toggleCarInputs() {
+            const normalHybridRadio = document.querySelector('input[name="carType"][value="normalHybrid"]');
+            const normalHybridDiv = document.getElementById('normalHybridInputs');
+            const phevDiv = document.getElementById('phevInputs');
+
+            if (normalHybridRadio.checked) {
+                normalHybridDiv.classList.remove('hidden');
+                phevDiv.classList.add('hidden');
+            } else {
+                normalHybridDiv.classList.add('hidden');
+                phevDiv.classList.remove('hidden');
+            }
+            calculateBreakeven(); // Recalculate when car type changes
+        }
+
+        function calculateBreakeven() {
+            clearAllFieldErrors(); // Clear all previous field errors first
+            const resultDiv = document.getElementById('result');
+            resultDiv.className = ''; // Reset result div style
+            resultDiv.innerHTML = 'Enter values and select car type to see the result.'; // Reset result message
+
+            let isValid = true; // Flag to track overall form validity
+
+            const priceDifference = parseFloat(document.getElementById('priceDifference').value);
+            if (isNaN(priceDifference) || priceDifference < 0) {
+                showError('priceDifference', 'Price difference cannot be empty or negative.');
+                isValid = false;
+            }
+
+            const petrolPrice = parseFloat(document.getElementById('petrolPrice').value);
+            if (isNaN(petrolPrice) || petrolPrice <= 0) {
+                showError('petrolPrice', 'Petrol price cannot be empty or zero/negative.');
+                isValid = false;
+            }
+
+            const nonHybridMileage = parseFloat(document.getElementById('nonHybridMileage').value);
+            if (isNaN(nonHybridMileage) || nonHybridMileage <= 0) {
+                showError('nonHybridMileage', 'Non-Hybrid mileage cannot be empty or zero/negative.');
+                isValid = false;
+            }
+
+            const selectedCarType = document.querySelector('input[name="carType"]:checked').value;
+            let fuelCostPerKmSelectedCar;
+
+            if (selectedCarType === 'normalHybrid') {
+                const hybridMileage = parseFloat(document.getElementById('hybridMileage').value);
+                if (isNaN(hybridMileage) || hybridMileage <= 0) {
+                    showError('hybridMileage', 'Normal Hybrid mileage cannot be empty or zero/negative.');
+                    isValid = false;
+                } else if (hybridMileage <= nonHybridMileage) {
+                    showError('hybridMileage', 'Hybrid mileage must be better than Non-Hybrid.');
+                    isValid = false;
+                }
+
+                if (isValid) { // Only calculate if all fields are valid so far
+                    fuelCostPerKmSelectedCar = petrolPrice / hybridMileage; // ₹/km
+                }
+
+            } else { // selectedCarType === 'phev'
+                const electricityPrice = parseFloat(document.getElementById('electricityPrice').value);
+                const phevElectricityConsumption = parseFloat(document.getElementById('phevElectricityConsumption').value);
+                const phevElectricRange = parseFloat(document.getElementById('phevElectricRange').value);
+                const phevHybridMileage = parseFloat(document.getElementById('phevHybridMileage').value);
+
+                if (isNaN(electricityPrice) || electricityPrice <= 0) {
+                    showError('electricityPrice', 'Electricity price cannot be empty or zero/negative.');
+                    isValid = false;
+                }
+                if (isNaN(phevElectricityConsumption) || phevElectricityConsumption <= 0) {
+                    showError('phevElectricityConsumption', 'PHEV electricity consumption cannot be empty or zero/negative.');
+                    isValid = false;
+                }
+                if (isNaN(phevElectricRange) || phevElectricRange < 0) { // Can be 0 if no electric range
+                    showError('phevElectricRange', 'PHEV electric range cannot be empty or negative.');
+                    isValid = false;
+                }
+                if (isNaN(phevHybridMileage) || phevHybridMileage <= 0) {
+                    showError('phevHybridMileage', 'PHEV petrol mileage cannot be empty or zero/negative.');
+                    isValid = false;
+                }
+
+                if (isValid) { // Only calculate if all fields are valid so far
+                    // Calculate blended cost per km for PHEV over a 100km cycle
+                    const referenceDistance = 100; // km
+
+                    let electricKmsInCycle = Math.min(phevElectricRange, referenceDistance);
+                    let petrolKmsInCycle = referenceDistance - electricKmsInCycle;
+
+                    let costForElectricPart = (electricKmsInCycle / 100) * phevElectricityConsumption * electricityPrice; // (km / 100km) * kWh/100km * ₹/kWh = ₹
+                    let costForPetrolPart = (petrolKmsInCycle / phevHybridMileage) * petrolPrice; // km / km/liter * ₹/liter = ₹
+
+                    let totalCostForReferenceDistance = costForElectricPart + costForPetrolPart;
+                    fuelCostPerKmSelectedCar = totalCostForReferenceDistance / referenceDistance; // ₹/km
+
+                    // Check for logical efficiency of PHEV against non-hybrid
+                    const fuelCostPerKmNonHybrid = petrolPrice / nonHybridMileage; // ₹/km
+                    if (fuelCostPerKmSelectedCar >= fuelCostPerKmNonHybrid) {
+                        resultDiv.className = 'error';
+                        resultDiv.innerHTML = 'The PHEV needs to offer better overall efficiency (via electric range or better petrol mileage) than the Non-Hybrid car for a breakeven point based on fuel savings.';
+                        return; // Stop here if logical error
+                    }
+                }
+            }
+
+            if (!isValid) { // If any individual field validation failed, stop here
+                resultDiv.innerHTML = 'Please fix the errors in the highlighted fields above.';
+                resultDiv.className = 'error';
+                return;
+            }
+
+            // If we reach here, all individual fields are valid. Proceed with calculation.
+            const fuelCostPerKmNonHybrid = petrolPrice / nonHybridMileage; // ₹/km
+            const savingsPerKm = fuelCostPerKmNonHybrid - fuelCostPerKmSelectedCar; // ₹/km
+
+            if (savingsPerKm <= 0) {
+                // This check is mainly for normal hybrid which was done above, but kept here for robustness
+                resultDiv.className = 'error';
+                resultDiv.innerHTML = `The selected car type does not provide fuel savings over the Non-Hybrid car with the given inputs. Breakeven is not possible via fuel savings.`;
+                return;
+            }
+
+            const kmsToBreakeven = priceDifference / savingsPerKm;
+
+            resultDiv.className = ''; // Clear any error classes
+            resultDiv.innerHTML = `
+                The selected car needs to be driven approximately
+                <strong>${kmsToBreakeven.toLocaleString(undefined, { maximumFractionDigits: 0 })} kilometers</strong>
+                to reach the same total cost of ownership as the non-hybrid car.
+            `;
+        }
+
+        // Initial setup on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            toggleCarInputs(); // Initialize visibility of inputs and trigger first calculation
+        });
+    </script>
+
+</body>
+</html>
