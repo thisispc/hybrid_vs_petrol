@@ -4,8 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hybrid/PHEV vs. Non-Hybrid Cost Calculator</title>
+
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8935981579804318"
-     crossorigin="anonymous"></script>
+            crossorigin="anonymous"></script>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-YOUR_MEASUREMENT_ID"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-YOUR_MEASUREMENT_ID');
+    </script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -18,8 +27,8 @@
             padding: 30px;
             border-radius: 8px;
             box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
-            max-width: 600px; /* Limits width on larger screens */
-            margin: 30px auto; /* Centers the container */
+            max-width: 600px;
+            margin: 30px auto;
         }
         h1 {
             color: #2c3e50;
@@ -41,8 +50,8 @@
             border: 1px solid #ddd;
             border-radius: 5px;
             font-size: 16px;
-            box-sizing: border-box; /* Include padding in width */
-            width: calc(100% - 20px); /* Adjusts for padding on inputs */
+            box-sizing: border-box;
+            width: calc(100% - 20px);
             margin-right: 10px;
         }
         input[type="radio"] {
@@ -141,37 +150,37 @@
         /* --- Mobile Responsiveness (Media Queries) --- */
         @media (max-width: 600px) {
             body {
-                margin: 10px; /* Reduce margin on very small screens */
+                margin: 10px;
             }
             .container {
-                padding: 20px; /* Reduce padding inside container */
-                margin: 10px auto; /* Adjust outer margin */
+                padding: 20px;
+                margin: 10px auto;
             }
             h1 {
-                font-size: 1.5em; /* Slightly smaller heading */
+                font-size: 1.5em;
                 margin-bottom: 20px;
             }
             .radio-group {
-                flex-direction: column; /* Stack radio buttons vertically */
-                align-items: flex-start; /* Align stacked items to the start */
+                flex-direction: column;
+                align-items: flex-start;
                 padding: 15px;
             }
             .radio-group label {
-                margin-bottom: 10px; /* Space between stacked radio buttons */
+                margin-bottom: 10px;
                 font-size: 0.95em;
             }
             .radio-group label:last-child {
-                margin-bottom: 0; /* No margin after the last one */
+                margin-bottom: 0;
             }
             input[type="number"], button {
-                font-size: 15px; /* Slightly smaller font in inputs/buttons */
+                font-size: 15px;
                 padding: 10px;
             }
             label {
-                font-size: 0.9em; /* Smaller label font */
+                font-size: 0.9em;
             }
             .error-tooltip {
-                font-size: 0.75em; /* Smaller tooltip font */
+                font-size: 0.75em;
             }
         }
 
@@ -180,7 +189,7 @@
                 padding: 15px;
             }
             input[type="number"] {
-                width: calc(100% - 10px); /* Adjust for padding on very small screens */
+                width: calc(100% - 10px);
             }
         }
     </style>
@@ -188,7 +197,7 @@
 <body>
 
     <div class="container">
-        <h1>Car Breakeven Point Calculator</h1>
+        <h1>Car Breakeven Point & CO2 Savings Calculator</h1>
 
         <div class="radio-group">
             <label>
@@ -248,9 +257,15 @@
                 <input type="number" id="phevHybridMileage" placeholder="e.g., 20" min="0" value="20" onkeydown="handleEnterKey(event)">
                 <span class="error-tooltip" id="phevHybridMileageError"></span>
             </div>
+            <div class="input-group">
+                <label for="gridCarbonIntensity">Electricity Grid Carbon Intensity (g CO2 / kWh):</label>
+                <input type="number" id="gridCarbonIntensity" placeholder="e.g., 700" min="0" step="1" value="700" onkeydown="handleEnterKey(event)">
+                <span class="error-tooltip" id="gridCarbonIntensityError"></span>
+                <small>*(Typical for India is 600-800 gCO2/kWh. Use 0 if assuming 100% renewable charging.)</small>
+            </div>
         </div>
 
-        <button onclick="calculateBreakeven()">Calculate Breakeven Point</button>
+        <button onclick="calculateBreakeven()">Calculate Breakeven Point & CO2</button>
 
         <div id="result">
             Enter values and select car type to see the result.
@@ -262,6 +277,9 @@
     </div>
 
     <script>
+        // Constants for CO2 calculation
+        const CO2_PER_LITER_PETROL = 2310; // grams CO2 per liter of petrol (approx)
+
         // Helper to show field-specific errors
         function showError(inputId, message) {
             const inputElement = document.getElementById(inputId);
@@ -343,6 +361,10 @@
 
             const selectedCarType = document.querySelector('input[name="carType"]:checked').value;
             let fuelCostPerKmSelectedCar;
+            let selectedCarCo2PerKm; // To store CO2 for the selected car
+
+            // Calculate Non-Hybrid CO2 emissions per km
+            const nonHybridCo2PerKm = CO2_PER_LITER_PETROL / nonHybridMileage;
 
             if (selectedCarType === 'normalHybrid') {
                 const hybridMileage = parseFloat(document.getElementById('hybridMileage').value);
@@ -356,6 +378,7 @@
 
                 if (isValid) { // Only calculate if all fields are valid so far
                     fuelCostPerKmSelectedCar = petrolPrice / hybridMileage; // ₹/km
+                    selectedCarCo2PerKm = CO2_PER_LITER_PETROL / hybridMileage; // gCO2/km
                 }
 
             } else { // selectedCarType === 'phev'
@@ -363,6 +386,7 @@
                 const phevElectricityConsumption = parseFloat(document.getElementById('phevElectricityConsumption').value);
                 const phevElectricRange = parseFloat(document.getElementById('phevElectricRange').value);
                 const phevHybridMileage = parseFloat(document.getElementById('phevHybridMileage').value);
+                const gridCarbonIntensity = parseFloat(document.getElementById('gridCarbonIntensity').value); // New CO2 input
 
                 if (isNaN(electricityPrice) || electricityPrice <= 0) {
                     showError('electricityPrice', 'Electricity price cannot be empty or zero/negative.');
@@ -372,7 +396,7 @@
                     showError('phevElectricityConsumption', 'PHEV electricity consumption cannot be empty or zero/negative.');
                     isValid = false;
                 }
-                if (isNaN(phevElectricRange) || phevElectricRange < 0) { // Can be 0 if no electric range
+                if (isNaN(phevElectricRange) || phevElectricRange < 0) {
                     showError('phevElectricRange', 'PHEV electric range cannot be empty or negative.');
                     isValid = false;
                 }
@@ -380,26 +404,41 @@
                     showError('phevHybridMileage', 'PHEV petrol mileage cannot be empty or zero/negative.');
                     isValid = false;
                 }
+                if (isNaN(gridCarbonIntensity) || gridCarbonIntensity < 0) { // Can be 0 if renewable
+                    showError('gridCarbonIntensity', 'Grid carbon intensity cannot be empty or negative.');
+                    isValid = false;
+                }
 
                 if (isValid) { // Only calculate if all fields are valid so far
-                    // Calculate blended cost per km for PHEV over a 100km cycle
-                    const referenceDistance = 100; // km
+                    const referenceDistance = 100; // km for blending costs and CO2
 
                     let electricKmsInCycle = Math.min(phevElectricRange, referenceDistance);
                     let petrolKmsInCycle = referenceDistance - electricKmsInCycle;
 
-                    let costForElectricPart = (electricKmsInCycle / 100) * phevElectricityConsumption * electricityPrice; // (km / 100km) * kWh/100km * ₹/kWh = ₹
-                    let costForPetrolPart = (petrolKmsInCycle / phevHybridMileage) * petrolPrice; // km / km/liter * ₹/liter = ₹
-
+                    // Calculate blended fuel cost per km for PHEV
+                    let costForElectricPart = (electricKmsInCycle / 100) * phevElectricityConsumption * electricityPrice;
+                    let costForPetrolPart = (petrolKmsInCycle / phevHybridMileage) * petrolPrice;
                     let totalCostForReferenceDistance = costForElectricPart + costForPetrolPart;
-                    fuelCostPerKmSelectedCar = totalCostForReferenceDistance / referenceDistance; // ₹/km
+                    fuelCostPerKmSelectedCar = totalCostForReferenceDistance / referenceDistance;
 
-                    // Check for logical efficiency of PHEV against non-hybrid
-                    const fuelCostPerKmNonHybrid = petrolPrice / nonHybridMileage; // ₹/km
+                    // Calculate blended CO2 emissions per km for PHEV
+                    let co2ForElectricPart = (electricKmsInCycle / 100) * phevElectricityConsumption * gridCarbonIntensity;
+                    let co2ForPetrolPart = (petrolKmsInCycle / phevHybridMileage) * CO2_PER_LITER_PETROL;
+                    let totalCo2ForReferenceDistancePHEV = co2ForElectricPart + co2ForPetrolPart;
+                    selectedCarCo2PerKm = totalCo2ForReferenceDistancePHEV / referenceDistance;
+
+                    // Check for logical efficiency of PHEV against non-hybrid for fuel cost
+                    const fuelCostPerKmNonHybrid = petrolPrice / nonHybridMileage;
                     if (fuelCostPerKmSelectedCar >= fuelCostPerKmNonHybrid) {
                         resultDiv.className = 'error';
                         resultDiv.innerHTML = 'The PHEV needs to offer better overall efficiency (via electric range or better petrol mileage) than the Non-Hybrid car for a breakeven point based on fuel savings.';
                         return; // Stop here if logical error
+                    }
+                     // Check for logical efficiency of PHEV against non-hybrid for CO2 (optional, but good)
+                    if (selectedCarCo2PerKm >= nonHybridCo2PerKm) {
+                        resultDiv.className = 'error';
+                        resultDiv.innerHTML = 'The selected PHEV\'s CO2 emissions are not lower than the Non-Hybrid car with the given inputs. CO2 savings not possible.';
+                        return;
                     }
                 }
             }
@@ -411,8 +450,8 @@
             }
 
             // If we reach here, all individual fields are valid. Proceed with calculation.
-            const fuelCostPerKmNonHybrid = petrolPrice / nonHybridMileage; // ₹/km
-            const savingsPerKm = fuelCostPerKmNonHybrid - fuelCostPerKmSelectedCar; // ₹/km
+            const fuelCostPerKmNonHybrid = petrolPrice / nonHybridMileage;
+            const savingsPerKm = fuelCostPerKmNonHybrid - fuelCostPerKmSelectedCar;
 
             if (savingsPerKm <= 0) {
                 // This check is mainly for normal hybrid which was done above, but kept here for robustness
@@ -423,11 +462,24 @@
 
             const kmsToBreakeven = priceDifference / savingsPerKm;
 
+            // Calculate CO2 savings
+            const co2SavingsPerKm = nonHybridCo2PerKm - selectedCarCo2PerKm;
+            let totalCo2Cut = 0; // Initialize to 0
+            if (co2SavingsPerKm > 0) {
+                 totalCo2Cut = co2SavingsPerKm * kmsToBreakeven; // grams CO2
+            }
+
+
             resultDiv.className = ''; // Clear any error classes
             resultDiv.innerHTML = `
                 The selected car needs to be driven approximately
                 <strong>${kmsToBreakeven.toLocaleString(undefined, { maximumFractionDigits: 0 })} kilometers</strong>
                 to reach the same total cost of ownership as the non-hybrid car.
+                <br><br>
+                This would result in an estimated CO2 emission reduction of
+                <strong>${(totalCo2Cut / 1000).toLocaleString(undefined, { maximumFractionDigits: 2 })} kg</strong>
+                (or ${(totalCo2Cut / 1000000).toLocaleString(undefined, { maximumFractionDigits: 3 })} metric tons)
+                of CO2.
             `;
         }
 
